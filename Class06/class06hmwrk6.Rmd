@@ -1,0 +1,89 @@
+---
+title: "Class 06 Homework: Q6 Protein B-factor Function"
+author: "Hyuntae An (TSN:200231511)"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Q6. Generalizing the original code
+
+The original code does the same four steps for every protein:
+
+1. read the protein with `read.pdb()`
+2. keep only chain A alpha carbons with `trim.pdb()`
+3. get the B-factor values from `$atom$b`
+4. plot the B-factors with `plotb3()`
+
+Because these steps are copied for each protein, it is easy to make
+copy/paste mistakes. In the original code, `s3.chainA` was made from `s1`
+instead of `s3`. To fix this, I wrote the steps once inside a function. The
+PDB code is the input, so the function works for any protein.
+
+## Inputs
+
+The function has one input:
+
+- `pdb.id`: the 4 letter PDB code of the protein, written in quotes (for
+  example `"4AKE"`). 
+
+## What the function does and how to use it
+
+The function reads in the protein structure, trims it down to chain A alpha
+carbons (one atom per amino acid), pulls out the B-factor values, and plots
+them. The plot also exhibits the secondary structure being the following: black rectangles are alpha helices and grey rectangles are beta
+strands.
+
+To use it, load the bio3d package and call the function with a PDB code:
+
+`plot_protein("4AKE")`
+
+## Output
+
+The function draws a B-factor plot for the protein, with the PDB code as the
+title. Furthermore, it  returns the B-factor values as a vector, so they can be saved
+and used later like comparing proteins.
+
+## Function code
+
+```{r, message=FALSE}
+library(bio3d)
+
+plot_protein <- function(pdb.id) {
+  # read in the protein structure
+  s <- read.pdb(pdb.id)
+
+  # keep only chain A alpha carbons
+  s.chainA <- trim.pdb(s, chain="A", elety="CA")
+
+  # get the B-factor values
+  s.b <- s.chainA$atom$b
+
+  # plot the B-factors with secondary structure in the margins
+  plotb3(s.b, sse=s.chainA, typ="l", ylab="Bfactor", main=pdb.id)
+
+  # return the B-factor values
+  return(s.b)
+}
+```
+
+## Example output
+
+Calling the function on the three proteins from the original code:
+
+```{r, message=FALSE}
+s1.b <- plot_protein("4AKE")  # kinase with drug
+s2.b <- plot_protein("1AKE")  # kinase no drug
+s3.b <- plot_protein("1E4Y")  # kinase with drug
+```
+
+
+## Why this is better than the original code
+
+- **Less repeated code:** steps are written once instead of three times.
+- **No copy/paste errors:** the s1/s3 mistake from the original can't happen.
+- **Works for any protein:** analyzing a new protein now takes only one line, like `plot_protein("1HSG")`.
+

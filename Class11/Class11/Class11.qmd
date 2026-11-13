@@ -1,0 +1,296 @@
+---
+title: "Class:11 (Protein Structure Prediction with AlphaFold)"
+author: "Hyuntae An (TSN:200231511)"
+format: pdf
+editor: visual
+---
+
+## Background
+
+We ran 3 AlphaFold2 predictions,
+
+- HIV-PR_Monomer
+- HIV-PR_dimer
+- My find-a-gene protein sequence
+
+Here we analyze the resulting models and make some diagnostic plots that inform on model reliability
+
+## 1. HIV-PR Monomer
+
+```{r}
+list.files(path= "HIV_monomer_94b5b_2/" ,
+           full.names = F,
+           pattern = ".pdb")
+```
+
+```{r}
+pdb_files <- list.files(path= "HIV_monomer_94b5b_2/" ,
+                        full.names = T,
+                        pattern = ".pdb")
+```
+
+```{r}
+library(bio3d)
+
+pdbs <- pdbaln(pdb_files, fit=TRUE, exefile="msa")
+```
+
+```{r}
+pdbs
+```
+
+## RMSD
+
+Calculate the RMSD of all models to each other (i.e. pairwise RMSD)
+
+```{r}
+rd <- rmsd(pdbs, fit=T)
+```
+
+and a heatmap display
+
+```{r}
+library(pheatmap)
+
+colnames(rd) <- paste0("m",1:5)
+rownames(rd) <- paste0("m",1:5)
+pheatmap(rd)
+```
+
+## RMSF
+
+Calculate RMSF - how far apart each amino-acid is accross all 5 AlphaFold models
+
+```{r}
+rf <- rmsf(pdbs$xyz)
+plot.bio3d(rf)
+```
+
+### Residue Conservation
+
+```{r}
+aln_file <- list.files(path="HIV_monomer_94b5b_2/",
+                        pattern=".a3m$",
+                        full.names = TRUE)
+```
+
+```{r}
+aln <- read.fasta(aln_file[1], to.upper = TRUE)
+```
+
+```{r}
+dim(aln$ali)
+```
+
+```{r}
+sim <- conserv(aln)
+```
+
+```{r}
+plotb3(sim[1:99], sse=trim.pdbs(pdbs, chain="A"),
+       ylab="Conservation Score")
+```
+
+```{r}
+con <- consensus(aln, cutoff = 0.9)
+con$seq
+```
+
+### pLDDT & PAE score plots
+
+The pLDDT scores are stroed in the PDB models "B-factor" col and in a sepereate JSON format file in the results directory. We can use either:
+
+```{r}
+plotb3(pdbs$b[1,], typ="l", lwd=2, sse=pdbs)
+points(pdbs$b[2,], typ="l", col="red")
+points(pdbs$b[3,], typ="l", col="blue")
+points(pdbs$b[4,], typ="l", col="darkgreen")
+points(pdbs$b[5,], typ="l", col="orange")
+abline(v=100, col="gray")
+```
+
+## 2. Hive-PR Dimer
+```{r}
+list.files(path="HIV_Dimer_23119/",
+
+full.names = F,
+pattern=".pdb")
+```
+```{r}
+pdb_files <- list.files(path="HIV_Dimer_23119/",
+
+full.names = T,
+pattern="*.pdb")
+# Print our PDB file names
+basename(pdb_files)
+```
+```{r}
+library(bio3d)
+pdbs <- pdbaln(pdb_files, fit=TRUE, exefile="msa")
+```
+```{r}
+pdbs
+```
+
+## RMSD
+```{r}
+rd <- rmsd(pdbs, fit=T)
+```
+
+
+```{r}
+library(pheatmap)
+colnames(rd) <- paste0("m",1:5)
+rownames(rd) <- paste0("m",1:5)
+pheatmap(rd)
+```
+
+## RMSF
+```{r}
+rf <- rmsf(pdbs$xyz)
+plot.bio3d(rf)
+```
+
+### Residue Conservation
+```{r}
+aln_file <- list.files(path="HIV_Dimer_23119/",
+pattern=".a3m$",
+full.name=TRUE)
+
+aln_file
+```
+
+```{r}
+aln <- read.fasta(aln_file[1], to.upper=TRUE)
+```
+
+```{r}
+sim <- conserv(aln)
+```
+
+```{r}
+plot(sim, typ="h")
+```
+
+```{r}
+con <- consensus(aln, cutoff=0.9)
+con$seq
+```
+```{r}
+m1.pdb <- read.pdb(pdb_files[1])
+occ <- vec2resno(rep(sim[1:99], 2), m1.pdb$atom$resno)
+write.pdb(m1.pdb, o=occ, file="m1_dimer_conserv.pdb")
+```
+
+### pLDDT & PAE score plots
+```{r}
+plotb3(pdbs$b[1,], typ="l", lwd=2, sse=m1.pdb)
+```
+
+```{r}
+# Initialize the plot first using the first dataset range
+plot(pdbs$b[2, ], type="l", col="red", ylim=c(min(pdbs$b, na.rm=TRUE), max(pdbs$b, na.rm=TRUE)))
+
+# Then add the remaining lines
+points(pdbs$b[3, ], type="l", col="blue")
+points(pdbs$b[4, ], type="l", col="darkgreen")
+points(pdbs$b[5, ], type="l", col="orange")
+abline(v=99, col="gray")
+```
+
+## 3. My Find-A-Gene Sequence
+
+```{r}
+list.files(path="test_e1404",
+
+full.names = F,
+pattern=".pdb")
+```
+```{r}
+pdb_files <- list.files(path="test_e1404",
+
+full.names = T,
+pattern="*.pdb")
+# Print our PDB file names
+basename(pdb_files)
+```
+```{r}
+library(bio3d)
+pdbs <- pdbaln(pdb_files, fit=TRUE, exefile="msa")
+```
+```{r}
+pdbs
+```
+
+## RMSD
+```{r}
+rd <- rmsd(pdbs, fit=T)
+```
+
+```{r}
+library(pheatmap)
+colnames(rd) <- paste0("m",1:5)
+rownames(rd) <- paste0("m",1:5)
+pheatmap(rd)
+```
+
+## RMSF
+
+```{r}
+rf <- rmsf(pdbs$xyz)
+plot.bio3d(rf)
+```
+
+
+### Residue Conservation
+
+```{r}
+aln_file <- list.files(path= "test_e1404",
+
+pattern=".a3m$",
+full.name=TRUE)
+
+aln_file
+```
+
+```{r}
+aln <- read.fasta(aln_file[1], to.upper=TRUE)
+```
+
+```{r}
+sim <- conserv(aln)
+```
+
+```{r}
+plot(sim, typ="h")
+```
+
+```{r}
+con <- consensus(aln, cutoff=0.9)
+con$seq
+```
+
+```{r}
+m1.pdb <- read.pdb(pdb_files[1])
+n_res <- length(unique(m1.pdb$atom$resno))
+occ <- vec2resno(sim[1:n_res], m1.pdb$atom$resno)
+write.pdb(m1.pdb, o=occ, file="m1_conserv.pdb")
+```
+
+
+
+### pLDDT & PAE score plots
+```{r}
+plotb3(pdbs$b[1,], typ="l", lwd=2, sse=m1.pdb)
+```
+
+```{r}
+plot(pdbs$b[2, ], type="l", col="red", ylim=c(min(pdbs$b, na.rm=TRUE), max(pdbs$b, na.rm=TRUE)))
+
+# Then add the remaining lines
+points(pdbs$b[3, ], type="l", col="blue")
+points(pdbs$b[4, ], type="l", col="darkgreen")
+points(pdbs$b[5, ], type="l", col="orange")
+abline(v=99, col="gray")
+```
+
